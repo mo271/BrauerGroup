@@ -418,7 +418,6 @@ lemma TensorProduct.map_comap_eq_of_isSimple_isCentralSimple
           apply TwoSidedIdeal.subset_span
           simp only [Set.mem_singleton_iff]
         exact b_ne_zero i₀ hi₀ mem
-
       have one_mem : (1 : B) ∈ TwoSidedIdeal.span {b i₀} := by rw [span_bi₀]; trivial
       rw [TwoSidedIdeal.mem_span_iff_exists_fin] at one_mem
       obtain ⟨ℐ, inst1, xL, xR, y, one_eq⟩ := one_mem
@@ -570,9 +569,7 @@ instance TensorProduct.simple
         rw [show a ⊗ₜ[K] b = (a ⊗ₜ 1) * (1 ⊗ₜ b) by simp]
         exact TwoSidedIdeal.mul_mem_right _ _ _ <| TwoSidedIdeal.subset_span ⟨a, ⟨⟩, rfl⟩
       | add x y hx hy => exact TwoSidedIdeal.add_mem _ hx hy
-
   apply TensorProduct.map_comap_eq_of_isSimple_isCentralSimple
-
 -- We can't have `L` to have different universe level of `D` in this proof, again due that we used
 -- `flatness`
 set_option synthInstance.maxHeartbeats 40000 in
