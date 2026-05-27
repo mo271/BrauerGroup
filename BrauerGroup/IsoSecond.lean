@@ -551,24 +551,24 @@ TensorProduct.liftAddHom
   rw [Submodule.Quotient.eq]
   exact Submodule.subset_span <| ⟨⟨k, a, b⟩, rfl⟩
 
-set_option synthInstance.maxHeartbeats 160000 in
 -- FIXME: Get rid of the raised heartbeats
 set_option maxSynthPendingDepth 3 in
 def Aox_KBToM : A ⊗[K] B →ₗ[F] M α β where
-  __ := Aox_KBToM_aux
+  toFun := Aox_KBToM_aux
+  map_add' := Aox_KBToM_aux.map_add
   map_smul' := by
     intro f x
     induction x using TensorProduct.induction_on with
     | tmul a b =>
-      simp only [Aox_KBToM_aux, smul_tmul', ZeroHom.toFun_eq_coe, AddMonoidHom.toZeroHom_coe,
+      simp only [Aox_KBToM_aux, smul_tmul',
         liftAddHom_tmul, AddMonoidHom.coe_mk, ZeroHom.coe_mk, RingHom.id_apply]
       rw [← Submodule.Quotient.mk_smul, smul_tmul']
     | add x y hx hy =>
-      simp only [ZeroHom.toFun_eq_coe, AddMonoidHom.toZeroHom_coe, RingHom.id_apply, smul_add,
+      simp only [RingHom.id_apply, smul_add,
         map_add] at hx hy ⊢
       simp only [hx, hy]
     | zero =>
-      simp only [smul_zero, ZeroHom.toFun_eq_coe, map_zero,
+      simp only [smul_zero, map_zero,
         RingHom.id_apply]
 
 def Aox_KBEquivM : M α β ≃ₗ[F] A ⊗[K] B := .ofLinear MtoAox_KB Aox_KBToM
@@ -576,8 +576,8 @@ def Aox_KBEquivM : M α β ≃ₗ[F] A ⊗[K] B := .ofLinear MtoAox_KB Aox_KBToM
     ext x
     induction x using TensorProduct.induction_on with
     | tmul a b =>
-      simp only [MtoAox_KB, Aox_KBToM, Aox_KBToM_aux, ZeroHom.toFun_eq_coe,
-        AddMonoidHom.toZeroHom_coe, LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
+      simp only [MtoAox_KB, Aox_KBToM, Aox_KBToM_aux,
+        LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
         Function.comp_apply, liftAddHom_tmul, AddMonoidHom.coe_mk, ZeroHom.coe_mk,
         Submodule.liftQ_apply, lift.tmul, LinearMap.id_coe, id_eq]
     | add x y hx hy =>
@@ -586,7 +586,7 @@ def Aox_KBEquivM : M α β ≃ₗ[F] A ⊗[K] B := .ofLinear MtoAox_KB Aox_KBToM
     | zero => simp)
   (by
     ext a b
-    simp only [Aox_KBToM, Aox_KBToM_aux, ZeroHom.toFun_eq_coe, AddMonoidHom.toZeroHom_coe,
+    simp only [Aox_KBToM, Aox_KBToM_aux,
       MtoAox_KB, AlgebraTensorModule.curry_apply, curry_apply, LinearMap.coe_restrictScalars,
       LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk, Function.comp_apply, Submodule.mkQ_apply,
       Submodule.liftQ_apply, lift.tmul, liftAddHom_tmul, AddMonoidHom.coe_mk, ZeroHom.coe_mk,

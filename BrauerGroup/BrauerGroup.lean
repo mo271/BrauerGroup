@@ -782,8 +782,7 @@ def e6Aux0 : (E ⊗[K] A) ⊗[E] (E ⊗[K] B) →ₐ[E] E ⊗[K] (A ⊗[K] B) :=
         simp only [Algebra.TensorProduct.tmul_mul_tmul, _root_.mul_one, _root_.one_mul]
         rw [mul_comm]
 
-set_option synthInstance.maxHeartbeats 40000 in
--- FIXME: Get rid of the raised heartbeats
+-- e6: equivalence (E ⊗[K] A) ⊗[E] (E ⊗[K] B) ≃ₐ[E] E ⊗[K] (A ⊗[K] B)
 def e6 [Algebra.IsCentral K A] [csa_A : IsSimpleRing A]
     [Algebra.IsCentral K B] [csa_B : IsSimpleRing B] :
     (E ⊗[K] A) ⊗[E] (E ⊗[K] B) ≃ₐ[E] E ⊗[K] (A ⊗[K] B) :=

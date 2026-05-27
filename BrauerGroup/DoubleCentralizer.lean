@@ -655,7 +655,7 @@ noncomputable def auxRight (B : Subalgebra F A) (C : Type u) [Ring C] [Algebra F
       rfl)
 
 set_option synthInstance.maxHeartbeats 120000 in
--- Reason: Synthesis of Ring instance on tensor product of algebra and coerced subalgebra is complex and requires higher limit.
+-- Reason: Synthesis of Ring on tensor product of coerced subalgebra is complex.
 instance : IsSimpleRing (A ⊗[F] Module.End.rightMul F B) := by
   constructor
   let eqv : (A ⊗[F] Module.End.rightMul F B) ≃ₐ[F] (Bᵐᵒᵖ  ⊗[F] A) :=
