@@ -654,20 +654,15 @@ noncomputable def auxRight (B : Subalgebra F A) (C : Type u) [Ring C] [Algebra F
       rw [map_mul]
       rfl)
 
-set_option synthInstance.maxHeartbeats 120000 in
--- Reason: Synthesis of Ring on tensor product of coerced subalgebra is complex.
-instance : IsSimpleRing (A ⊗[F] Module.End.rightMul F B) := by
+instance IsSimpleRing.op (B : Type*) [Ring B] [IsSimpleRing B] : IsSimpleRing Bᵐᵒᵖ := by
   constructor
-  let eqv : (A ⊗[F] Module.End.rightMul F B) ≃ₐ[F] (Bᵐᵒᵖ  ⊗[F] A) :=
-    AlgEquiv.trans (Algebra.TensorProduct.congr AlgEquiv.refl Module.End.rightMulEquiv)
-      (Algebra.TensorProduct.comm F A Bᵐᵒᵖ)
-  have := TwoSidedIdeal.orderIsoOfRingEquiv eqv.toRingEquiv
-  rw [OrderIso.isSimpleOrder_iff this]
-  haveI : IsSimpleRing Bᵐᵒᵖ := by
-    constructor
-    rw [← TwoSidedIdeal.opOrderIso.isSimpleOrder_iff]
-    exact IsSimpleRing.simple
-  apply (IsCentralSimple.TensorProduct.simple F _ _).simple
+  rw [← TwoSidedIdeal.opOrderIso.isSimpleOrder_iff]
+  exact IsSimpleRing.simple
+
+noncomputable def rightMulTensorEquiv :
+    (A ⊗[F] Module.End.rightMul F B) ≃ₐ[F] (Bᵐᵒᵖ ⊗[F] A) :=
+  AlgEquiv.trans (Algebra.TensorProduct.congr AlgEquiv.refl Module.End.rightMulEquiv)
+    (Algebra.TensorProduct.comm F A Bᵐᵒᵖ)
 
 lemma step1 {ι : Type*} (ℬ : Basis ι F <| Module.End F B) :
     ∃ (x : (A ⊗[F] Module.End F B)ˣ),
@@ -780,7 +775,7 @@ lemma centralizer_isSimple {ι : Type*} (ℬ : Basis ι F <| Module.End F B) :
     constructor
     rw [OrderIso.isSimpleOrder_iff this]
     rw [Subalgebra.conj_simple_iff]
-    let eqv'' := auxRight (Module.End.rightMul F B) A
+    let eqv'' := (rightMulTensorEquiv B).symm.trans (auxRight (Module.End.rightMul F B) A)
     have := TwoSidedIdeal.orderIsoOfRingEquiv eqv''.toRingEquiv
     rw [← OrderIso.isSimpleOrder_iff this]
     infer_instance

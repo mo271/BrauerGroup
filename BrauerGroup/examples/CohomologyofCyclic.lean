@@ -454,9 +454,9 @@ abbrev CyclicCoh.groupCoh0 [CommGroup G] (A : Rep k G) : groupCohomology A 0 ≅
   ModuleCat.of k A.ρ.invariants := groupCohomology.H0Iso A
 
 set_option maxHeartbeats 1200000 in
--- FIXME: Get rid of raised heartbeats
+-- Reason: moduleCatLeftHomologyData has deep category theory limits and cokernel diagrams
 set_option synthInstance.maxHeartbeats 120000 in
--- FIXME: Get rid of raised heartbeats
+-- Reason: moduleCatLeftHomologyData has deep category theory limits and cokernel diagrams
 open Limits in
 -- @[simps K H i π]
 def moduleCatLeftHomologyData (S : ShortComplex (ModuleCat k)) (P : Submodule k S.X₂)
@@ -595,7 +595,7 @@ abbrev invariants_eq : ((galAct F K).ρ.invariants : Submodule ℤ
   (Rep.ofMulDistribMulAction Gal(K, F) Kˣ).V) = sorry := sorry
 
 set_option synthInstance.maxHeartbeats 80000 in
--- FIXME: Get rid of raised heartbeats
+-- Reason: Additive RelativeBrGroup to norm quotient AddEquiv typeclass synthesis is deep
 abbrev BrauerOverCyclic : Additive (RelativeBrGroup K F) ≃+
     Additive (Fˣ⧸(Units.map (Algebra.norm (S := K) F)).range) :=
   BrauerOverCyclic' F K τ hτ|>.toAddEquiv.trans

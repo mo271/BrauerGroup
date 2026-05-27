@@ -12,8 +12,8 @@ variable {D : Type} [DivisionRing D]
 
 section prerequisites
 
-set_option synthInstance.maxHeartbeats 80000 in
--- FIXME: Get rid of the raised heartbeats
+set_option synthInstance.maxHeartbeats 40000 in
+-- Reason: Subalgebra typeclass resolution for DivisionRing over ℝ
 theorem rank_1_D_iso_R [Algebra ℝ D] : Module.finrank ℝ D = 1 →
     Nonempty (D ≃ₐ[ℝ] ℝ) := fun h ↦ by
   have h' := Subalgebra.finrank_eq_one_iff (F := ℝ) (S := (⊤ : Subalgebra ℝ D))
@@ -546,8 +546,6 @@ lemma linindep1ij (x : Dˣ) (hx : ∀ z, x.1⁻¹ * f k e z * x = k.val z)
       mul_inv_cancel₀ (Subtype.coe_ne_coe.1 hyy), one_mul] at hx
     simpa [Complex.ext_iff, neg_one_eq_one_iff] using congr(e $(hx <| e.symm Complex.I))
 
-set_option synthInstance.maxHeartbeats 40000 in
--- set_option maxHeartbeats 600000 in
 lemma linindepijk (x : Dˣ) (hx : ∀ z, x.1⁻¹ * f k e z * x = k.val z)
     (hDD : Module.finrank ℝ D = 4) :
     LinearIndependent ℝ (basisijk k e x hx hDD) := by
@@ -770,8 +768,9 @@ theorem centereqvCisoC (A : Type) [DivisionRing A] [Algebra ℝ A] [FiniteDimens
         Algebra.algebraMap_eq_smul_one, smul_assoc, one_smul]} bij⟩
 
 set_option synthInstance.maxHeartbeats 80000 in
--- FIXME: Get rid of the raised heartbeats
+-- Reason: RealExtension_is_RorC center and SubField typeclass resolution is very deep
 set_option maxHeartbeats 600000 in
+-- Reason: RealExtension_is_RorC center and SubField typeclass resolution is very deep
 theorem FrobeniusTheorem (A : Type) [DivisionRing A] [Algebra ℝ A] [FiniteDimensional ℝ A] :
     Nonempty (A ≃ₐ[ℝ] ℂ) ∨ Nonempty (A ≃ₐ[ℝ] ℝ) ∨ Nonempty (A ≃ₐ[ℝ] ℍ[ℝ]) := by
   obtain ⟨⟨hR⟩⟩ | hC := RealExtension_is_RorC (Subalgebra.center ℝ A)

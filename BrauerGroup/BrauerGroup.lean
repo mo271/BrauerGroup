@@ -607,10 +607,10 @@ lemma e3Aux3 (hm : m = 0) : Subsingleton ((E ⊗[K] A) ⊗[E] (E ⊗[K] Matrix (
   rw [show mat = 0 from Subsingleton.elim _ _]
   simp
 
-set_option maxHeartbeats 800000 in
--- FIXME: Get rid of the raised heartbeats
-set_option synthInstance.maxHeartbeats 160000 in
--- FIXME: Get rid of the raised heartbeats
+set_option maxHeartbeats 600000 in
+-- Reason: nested tensor product induction with deep typeclass search
+set_option synthInstance.maxHeartbeats 120000 in
+-- Reason: nested tensor product induction with deep typeclass search
 def e3Aux4 :
     (E ⊗[K] A) ⊗[E] (E ⊗[K] Matrix (Fin m) (Fin m) K) →ₐ[E]
       E ⊗[K] (A ⊗[K] Matrix (Fin m) (Fin m) K) := by
@@ -658,9 +658,9 @@ def e3Aux4 :
     rw [mul_comm]
 
 set_option maxHeartbeats 800000 in
--- FIXME: Get rid of the raised heartbeats
+-- Reason: surjectivity proof over tensor product quotient
 set_option synthInstance.maxHeartbeats 100000 in
--- FIXME: Get rid of the raised heartbeats
+-- Reason: surjectivity proof over tensor product quotient
 lemma e3Aux5 : Function.Surjective (e3Aux4 (K := K) (E := E) A m) := by
   intro x
   induction x using TensorProduct.induction_on with
@@ -717,7 +717,7 @@ def e5 (e : A ≃ₐ[K] B) : (E ⊗[K] A) ≃ₐ[E] (E ⊗[K] B) :=
   Algebra.TensorProduct.congr AlgEquiv.refl e
 
 set_option maxHeartbeats 800000 in
--- FIXME: Get rid of the raised heartbeats
+-- Reason: nested tensor product lift with commutativity proof
 def e6Aux0 : (E ⊗[K] A) ⊗[E] (E ⊗[K] B) →ₐ[E] E ⊗[K] (A ⊗[K] B) :=
   Algebra.TensorProduct.lift
     (Algebra.TensorProduct.lift
@@ -880,8 +880,8 @@ def baseChange_idem.Aux (F K E : Type u) [Field F] [Field K] [Field E]
   TensorProduct.AlgebraTensorModule.congr
     (TensorProduct.AlgebraTensorModule.rid _ _ _) (LinearEquiv.refl _ _)
 
-set_option maxHeartbeats 600000 in
--- FIXME: Get rid of the raised heartbeats
+set_option maxHeartbeats 400000 in
+-- Reason: AlgEquiv.ofLinearEquiv mul-compat proof by induction
 def baseChange_idem.Aux' (F K E : Type u) [Field F] [Field K] [Field E]
     [Algebra F K] [Algebra F E] [Algebra K E] [IsScalarTower F K E] (A : CSA F) :
     E ⊗[K] (K ⊗[F] A) ≃ₐ[E] (E ⊗[F] A.carrier) := by
