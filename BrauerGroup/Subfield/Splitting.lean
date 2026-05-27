@@ -11,8 +11,36 @@ open FiniteDimensional MulOpposite BrauerGroup TensorProduct
 
 section CSA
 
-set_option maxHeartbeats 1200000 in
--- FIXME: Get rid of the raised heartbeats
+def splitting_emb_map [FiniteDimensional F K] (A : CSA F) (n : ℕ)
+    (emb : A →ₐ[F] Module.End F (Fin n → K))
+    (h_comm : ∀ (x : A) (r : K) (v : Fin n → K), (emb x) (r • v) = r • (emb x) v) :
+    K →ₐ[F] Subalgebra.centralizer F (AlgHom.range emb : Set (Module.End F (Fin n → K))) where
+  toFun r :=
+    ⟨{ toFun a := r • a
+       map_add' := by simp
+       map_smul' := by
+         intro r v
+         ext i
+         simp only [Pi.smul_apply, smul_eq_mul, Algebra.mul_smul_comm, RingHom.id_apply] }, by
+      rintro _ ⟨x, rfl⟩
+      refine LinearMap.ext fun v ↦ h_comm x r v⟩
+  map_one' := by ext; simp only [one_smul, LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
+    LinearMap.coe_single, Function.comp_apply, OneMemClass.coe_one, Module.End.one_apply]
+  map_mul' := by intros; ext; simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
+    LinearMap.coe_single, Function.comp_apply, Pi.smul_apply, smul_eq_mul, _root_.mul_assoc,
+    MulMemClass.coe_mul, Module.End.mul_apply]
+  map_zero' := by ext; simp only [zero_smul, LinearMap.coe_comp, LinearMap.coe_mk,
+    AddHom.coe_mk, LinearMap.coe_single, Function.comp_apply, Pi.zero_apply,
+    ZeroMemClass.coe_zero, LinearMap.zero_comp, LinearMap.zero_apply]
+  map_add' := by intros; ext; simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
+    LinearMap.coe_single, Function.comp_apply, Pi.smul_apply, smul_eq_mul, add_mul,
+    AddMemClass.coe_add, LinearMap.add_apply, Pi.add_apply]
+  commutes' := by intros; ext; simp only [algebraMap_smul, LinearMap.coe_comp, LinearMap.coe_mk,
+    AddHom.coe_mk, LinearMap.coe_single, Function.comp_apply, Pi.smul_apply,
+    SubalgebraClass.coe_algebraMap, Module.algebraMap_end_apply]
+
+set_option maxHeartbeats 300000 in
+-- Reason: Elaboration of the centralizer dimension and tensor isomorphism proofs requires higher limit.
 set_option maxSynthPendingDepth 2 in
 lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : isSplit F A K) :
     ∃ (B : CSA F), (Quotient.mk'' A : BrauerGroup F) * (Quotient.mk'' B) = 1 ∧
@@ -40,9 +68,6 @@ lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : i
     constructor
     have : 0 < Module.finrank F (Fin n → K) := Module.finrank_pos
     omega
-  -- haveI : IsCentralSimple F (Matrix (Fin (Module.finrank F (Fin n → K)))
-  --   (Fin (Module.finrank F (Fin n → K))) F) := by
-  --   apply MatrixRing.isCentralSimple
   haveI : Algebra.IsCentral F (Module.End F (Fin n → K)) := by
     have f := algEquivMatrix (R := F) (M := Fin n → K) (Module.finBasis _ _)
     refine f.symm.isCentral
@@ -55,11 +80,11 @@ lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : i
   { out := fun x hx => by
       rw [Algebra.mem_bot]
       rw [Subalgebra.mem_center_iff] at hx
-      have hx' : ⟨x, by
-          rw [← double_centralizer (B := emb.range)]
-          intro y hy
-          specialize hx ⟨y, hy⟩
-          simpa [Subtype.ext_iff] using hx⟩ ∈ Subalgebra.center F emb.range := by
+      have hx_in : x.1 ∈ emb.range := by
+        rw [← double_centralizer (B := emb.range)]
+        intro y hy
+        exact Subtype.ext_iff.1 (hx ⟨y, hy⟩)
+      have hx' : ⟨x.1, hx_in⟩ ∈ Subalgebra.center F emb.range := by
         rw [Subalgebra.mem_center_iff]
         rintro ⟨_, ⟨y, rfl⟩⟩
         rw [Subtype.ext_iff]
@@ -71,37 +96,8 @@ lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : i
       rw [Subtype.ext_iff, ← hr]
       rfl }
   haveI : IsSimpleRing B := centralizer_isSimple _ (Module.Free.chooseBasis _ _)
-  refine ⟨⟨.of F B⟩, ?_,
-    { toFun r :=
-        ⟨{
-          toFun a := r • a
-          map_add' := by simp
-          map_smul' := by
-            intro r v
-            ext i
-            simp only [Pi.smul_apply, smul_eq_mul, Algebra.mul_smul_comm, RingHom.id_apply]
-        }, by
-        rintro _ ⟨x, rfl⟩
-        refine LinearMap.ext fun v ↦ ?_
-        simp only [AlgEquiv.toAlgHom_eq_coe, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
-          AlgHom.coe_comp, AlgHom.coe_mk, RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk,
-          AlgHom.coe_restrictScalars', AlgHom.coe_coe, Function.comp_apply,
-          Algebra.TensorProduct.includeRight_apply, Module.End.mul_apply, LinearMap.coe_mk,
-          AddHom.coe_mk, LinearMap.coe_restrictScalars, map_smul, emb]⟩
-      map_one' := by ext; simp only [one_smul, LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
-        LinearMap.coe_single, Function.comp_apply, OneMemClass.coe_one, Module.End.one_apply]
-      map_mul' := by intros; ext; simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
-        LinearMap.coe_single, Function.comp_apply, Pi.smul_apply, smul_eq_mul, _root_.mul_assoc,
-        MulMemClass.coe_mul, Module.End.mul_apply]
-      map_zero' := by ext; simp only [zero_smul, LinearMap.coe_comp, LinearMap.coe_mk,
-        AddHom.coe_mk, LinearMap.coe_single, Function.comp_apply, Pi.zero_apply,
-        ZeroMemClass.coe_zero, LinearMap.zero_comp, LinearMap.zero_apply]
-      map_add' := by intros; ext; simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
-        LinearMap.coe_single, Function.comp_apply, Pi.smul_apply, smul_eq_mul, add_mul,
-        AddMemClass.coe_add, LinearMap.add_apply, Pi.add_apply]
-      commutes' := by intros; ext; simp only [algebraMap_smul, LinearMap.coe_comp, LinearMap.coe_mk,
-        AddHom.coe_mk, LinearMap.coe_single, Function.comp_apply, Pi.smul_apply,
-        SubalgebraClass.coe_algebraMap, Module.algebraMap_end_apply] }, ?_⟩
+  refine ⟨⟨.of F B⟩, ?_, ⟨splitting_emb_map K F A n emb
+    (fun x r v ↦ (iso' (1 ⊗ₜ x)).map_smul r v), ?_⟩⟩
   · change Quotient.mk'' _ = Quotient.mk'' (⟨AlgCat.of F F⟩ : CSA F)
     have := writeAsTensorProduct (B := emb.range)
     have iso : A ⊗[F] B ≃ₐ[F] Matrix (Fin (Module.finrank F (Fin n → K)))
@@ -111,7 +107,7 @@ lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : i
         (writeAsTensorProduct (B := emb.range) |>.trans <|
           Algebra.TensorProduct.congr e.symm AlgEquiv.refl)
     apply Quotient.sound'
-    exact ⟨1, Module.finrank F (Fin n → K), one_ne_zero, by aesop, ⟨(dim_one_iso _).trans iso⟩⟩
+    exact ⟨1, Module.finrank F (Fin n → K), one_ne_zero, NeZero.ne _, ⟨(dim_one_iso _).trans iso⟩⟩
   · change Module.finrank F K ^ 2 = Module.finrank F B
     have dim_eq1 : Module.finrank F B * _ = _ := dim_centralizer F emb.range
     rw [Module.finrank_linearMap, show Module.finrank F (Fin n → K) =
