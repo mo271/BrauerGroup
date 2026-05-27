@@ -291,11 +291,22 @@ end field_ext
 -- `e : F ⊗[K] A ≃ₐ[F] Mₙ(F)`,
 -- `L/K` is another splitting field with iso `e' : L ⊗[K] A ≃ₐ[L] Mₙ(L)`.
 -- ∀ a : A, reduced charpoly of `a` using `e` is the same as using `e'`.
+
+/-- The canonical `K`-algebra map `F →ₐ[K] (F ⊗[K] L) ⧸ I` sending `m ↦ m ⊗ 1`. -/
+noncomputable def quotTensorLeftAlgHom (L : Type u) [Field L] [Algebra K L]
+    (I : Ideal (F ⊗[K] L)) : F →ₐ[K] (F ⊗[K] L) ⧸ I :=
+  (Ideal.Quotient.mkₐ K I).comp Algebra.TensorProduct.includeLeft
+
+/-- The canonical `K`-algebra map `L →ₐ[K] (F ⊗[K] L) ⧸ I` sending `m ↦ 1 ⊗ m`. -/
+noncomputable def quotTensorRightAlgHom (L : Type u) [Field L] [Algebra K L]
+    (I : Ideal (F ⊗[K] L)) : L →ₐ[K] (F ⊗[K] L) ⧸ I :=
+  (Ideal.Quotient.mkₐ K I).comp Algebra.TensorProduct.includeRight
+
 include F_bar in
 set_option maxSynthPendingDepth 3 in
-set_option synthInstance.maxHeartbeats 80000 in
--- FIXME: Get rid of the raised heartbeats
-set_option maxHeartbeats 1600000 in
+set_option synthInstance.maxHeartbeats 40000 in
+-- Reason: deep typeclass resolution for quotient algebra instances
+set_option maxHeartbeats 800000 in
 lemma unique_onver_split (L L_bar : Type u) [Field L] [Field L_bar] [Algebra K L] [Algebra L L_bar]
     [FiniteDimensional K L] [IsGalois K L] [hL : IsAlgClosure L L_bar]
     (e' : L ⊗[K] A ≃ₐ[L] Matrix (Fin n) (Fin n) L) (a : A) :
@@ -308,22 +319,8 @@ lemma unique_onver_split (L L_bar : Type u) [Field L] [Field L_bar] [Algebra K L
   have : IsField E :=
     Ideal.Quotient.maximal_ideal_iff_isField_quotient _|>.1 (Ideal.exists_maximal _).choose_spec
   letI alg : Algebra K E := Ideal.Quotient.algebra K
-  let φ : F →ₐ[K] E := {
-    toFun m := Ideal.Quotient.mk _ (m ⊗ₜ 1)
-    map_one' := by simp [← Algebra.TensorProduct.one_def]
-    map_mul' x y := by rw [← mul_one 1, ← Algebra.TensorProduct.tmul_mul_tmul, map_mul, mul_one]
-    map_zero' := by simp
-    map_add' := by simp [TensorProduct.add_tmul]
-    commutes' := by simpa [Algebra.algebraMap_eq_smul_one, ← TensorProduct.smul_tmul', ←
-      Algebra.TensorProduct.one_def] using fun _ ↦ by rfl }
-  let ψ : L →ₐ[K] E := {
-    toFun m := Ideal.Quotient.mk _ (1 ⊗ₜ m)
-    map_one' := by simp [← Algebra.TensorProduct.one_def]
-    map_mul' x y := by rw [← mul_one 1, ← Algebra.TensorProduct.tmul_mul_tmul, map_mul, mul_one]
-    map_zero' := by simp
-    map_add' := by simp [TensorProduct.tmul_add]
-    commutes' := by simpa [Algebra.algebraMap_eq_smul_one, ← TensorProduct.smul_tmul', ←
-      Algebra.TensorProduct.one_def] using fun _ ↦ by rfl }
+  let φ := quotTensorLeftAlgHom K F L (Ideal.exists_maximal (F ⊗[K] L)).choose
+  let ψ := quotTensorRightAlgHom K F L (Ideal.exists_maximal (F ⊗[K] L)).choose
   obtain ⟨g1, hg1⟩ := @ReducedCharPoly.over_extension K F E A _ _ (IsField.toField this) _
     (Ideal.Quotient.algebra K) _ _ _ e φ a
   obtain ⟨g2, hg2⟩ := @ReducedCharPoly.over_extension K L E A _ _ (IsField.toField this) _
@@ -333,7 +330,8 @@ lemma unique_onver_split (L L_bar : Type u) [Field L] [Field L_bar] [Algebra K L
       convert Module.Finite.quotient F (Ideal.exists_maximal (F ⊗[K] L)).choose
       ext r m
       change φ r * m = r • m
-      simp [φ]
+      simp only [φ, quotTensorLeftAlgHom, AlgHom.comp_apply,
+        Algebra.TensorProduct.includeLeft_apply, Ideal.Quotient.mkₐ_eq_mk]
       induction m using Submodule.Quotient.induction_on with
       | H m =>
       induction m using TensorProduct.induction_on with
@@ -344,8 +342,9 @@ lemma unique_onver_split (L L_bar : Type u) [Field L] [Field L_bar] [Algebra K L
         rfl
       | add x y hx hy =>
         change _ * Ideal.Quotient.mk _ _ = r • Ideal.Quotient.mk _ _ at hx hy
-        simp [map_add, mul_add, hx, hy]
-      | zero => simp) _
+        simp only [Submodule.Quotient.mk_add, mul_add, smul_add]
+        congr 1
+      | zero => simp only [Submodule.Quotient.mk_zero, mul_zero, smul_zero]) _
   have algclo : IsAlgClosed F_bar := IsAlgClosure.isAlgClosed F
   have tow : IsScalarTower F E F_bar := {
     smul_assoc f e f0 := by
