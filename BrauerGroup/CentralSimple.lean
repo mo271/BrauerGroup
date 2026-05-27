@@ -589,18 +589,23 @@ instance baseChange
         Algebra.TensorProduct.algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply]
       rw [Algebra.TensorProduct.map_tmul, TensorProduct.smul_tmul]
       rw [← Algebra.algebraMap_eq_smul_one]
-      change (Subalgebra.center K L).val l ⊗ₜ[K] (Algebra.ofId K D).toRingHom k = (Subalgebra.center K L).val l ⊗ₜ[K] (Subalgebra.center K D).val d
+      change (Subalgebra.center K L).val l ⊗ₜ[K] (Algebra.ofId K D).toRingHom k =
+        (Subalgebra.center K L).val l ⊗ₜ[K] (Subalgebra.center K D).val d
       rw [hk]
       rfl
     | add x y hx hy =>
       obtain ⟨kx, (hkx : kx ⊗ₜ 1 = _)⟩ := hx
       obtain ⟨ky, (hky : ky ⊗ₜ 1 = _)⟩ := hy
       exact ⟨kx + ky, by
-        change (kx + ky) ⊗ₜ[K] (1 : D) = (Algebra.TensorProduct.map (Subalgebra.center K L).val (Subalgebra.center K D).val) (x + y)
+        change (kx + ky) ⊗ₜ[K] (1 : D) =
+          (Algebra.TensorProduct.map (Subalgebra.center K L).val
+            (Subalgebra.center K D).val) (x + y)
         rw [TensorProduct.add_tmul, map_add]
         change kx ⊗ₜ[K] 1 + ky ⊗ₜ[K] 1 =
-          (Algebra.TensorProduct.map (Subalgebra.center K L).val (Subalgebra.center K D).val).toRingHom x +
-          (Algebra.TensorProduct.map (Subalgebra.center K L).val (Subalgebra.center K D).val).toRingHom y
+          (Algebra.TensorProduct.map (Subalgebra.center K L).val
+            (Subalgebra.center K D).val).toRingHom x +
+          (Algebra.TensorProduct.map (Subalgebra.center K L).val
+            (Subalgebra.center K D).val).toRingHom y
         rw [← hkx, ← hky]⟩
 
 end IsCentralSimple
