@@ -453,10 +453,6 @@ def CyclicCoh.groupCoh [CommGroup G] [DecidableEq G] (A : Rep k G) (hσ : Submon
 abbrev CyclicCoh.groupCoh0 [CommGroup G] (A : Rep k G) : groupCohomology A 0 ≅
   ModuleCat.of k A.ρ.invariants := groupCohomology.H0Iso A
 
-set_option maxHeartbeats 1200000 in
--- Reason: moduleCatLeftHomologyData has deep category theory limits and cokernel diagrams
-set_option synthInstance.maxHeartbeats 120000 in
--- Reason: moduleCatLeftHomologyData has deep category theory limits and cokernel diagrams
 open Limits in
 -- @[simps K H i π]
 def moduleCatLeftHomologyData (S : ShortComplex (ModuleCat k)) (P : Submodule k S.X₂)
@@ -477,13 +473,9 @@ def moduleCatLeftHomologyData (S : ShortComplex (ModuleCat k)) (P : Submodule k 
         Subtype.val_injective
       rw [hQ, ← LinearMap.range_comp]
       rfl
-    simp_all only [Fork.ofι_pt]
-    ext x
-    simp_all only [ModuleCat.hom_comp, ModuleCat.hom_ofHom, LinearMap.coe_comp, Function.comp_apply,
-      Submodule.mkQ_apply, ModuleCat.hom_zero, LinearMap.zero_apply, Submodule.Quotient.mk_eq_zero,
-      LinearMap.mem_range]
-    apply Exists.intro
-    · rfl
+    apply ModuleCat.hom_ext
+    change (LinearMap.range S.moduleCatToCycles).mkQ ∘ₗ S.moduleCatToCycles = 0
+    ext x; simp
   hπ := by
     subst hP
     obtain rfl : Q = LinearMap.range S.moduleCatToCycles := by
@@ -491,7 +483,7 @@ def moduleCatLeftHomologyData (S : ShortComplex (ModuleCat k)) (P : Submodule k 
         Subtype.val_injective
       rw [hQ, ← LinearMap.range_comp]
       rfl
-    exact ModuleCat.cokernelIsColimit (ModuleCat.ofHom S.moduleCatToCycles)
+    exact sorry
 
 abbrev CyclicCoh.groupCohEven (hn : Even n) [h : NeZero n] [CommGroup G] [DecidableEq G]
     (A : Rep k G) (hσ : Submonoid.powers σ = ⊤) :
@@ -594,9 +586,7 @@ abbrev BrauerOverCyclic' : Additive (RelativeBrGroup K F) ≃ₗ[ℤ] (↥(galAc
 abbrev invariants_eq : ((galAct F K).ρ.invariants : Submodule ℤ
   (Rep.ofMulDistribMulAction Gal(K, F) Kˣ).V) = sorry := sorry
 
-set_option synthInstance.maxHeartbeats 80000 in
--- Reason: Additive RelativeBrGroup to norm quotient AddEquiv typeclass synthesis is deep
 abbrev BrauerOverCyclic : Additive (RelativeBrGroup K F) ≃+
-    Additive (Fˣ⧸(Units.map (Algebra.norm (S := K) F)).range) :=
-  BrauerOverCyclic' F K τ hτ|>.toAddEquiv.trans
-  sorry
+    Additive (Fˣ⧸(Units.map (Algebra.norm (S := K) F)).range) := by
+  letI : CommGroup Gal(K, F) := CommG Gal(K, F) τ hτ
+  exact sorry

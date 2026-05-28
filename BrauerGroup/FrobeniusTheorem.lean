@@ -12,15 +12,12 @@ variable {D : Type} [DivisionRing D]
 
 section prerequisites
 
-set_option synthInstance.maxHeartbeats 40000 in
--- Reason: Subalgebra typeclass resolution for DivisionRing over ℝ
 theorem rank_1_D_iso_R [Algebra ℝ D] : Module.finrank ℝ D = 1 →
     Nonempty (D ≃ₐ[ℝ] ℝ) := fun h ↦ by
-  have h' := Subalgebra.finrank_eq_one_iff (F := ℝ) (S := (⊤ : Subalgebra ℝ D))
-  have : Module.finrank ℝ (⊤ : Subalgebra ℝ D) = 1 := by
-    simp_all only [Subalgebra.finrank_eq_one_iff, Subalgebra.bot_eq_top_of_finrank_eq_one]
-  exact ⟨Subalgebra.topEquiv.symm.trans <| Subalgebra.equivOfEq _ _
-    (h'.1 this)|>.trans <| Algebra.botEquiv ℝ D⟩
+  haveI : FiniteDimensional ℝ D := .of_finrank_pos (by omega)
+  have : (⊥ : Subalgebra ℝ D) = ⊤ := Subalgebra.bot_eq_top_of_finrank_eq_one h
+  exact ⟨Subalgebra.topEquiv.symm.trans <| (Subalgebra.equivOfEq _ _ this.symm).trans <|
+    Algebra.botEquiv ℝ D⟩
 
 lemma RealExtension_is_RorC (K : Type) [Field K] [Algebra ℝ K] [FiniteDimensional ℝ K] :
     Nonempty (K ≃ₐ[ℝ] ℝ) ∨ Nonempty (K ≃ₐ[ℝ] ℂ) := by
@@ -767,40 +764,50 @@ theorem centereqvCisoC (A : Type) [DivisionRing A] [Algebra ℝ A] [FiniteDimens
       rw [Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one,
         Algebra.algebraMap_eq_smul_one, smul_assoc, one_smul]} bij⟩
 
-set_option synthInstance.maxHeartbeats 80000 in
--- Reason: RealExtension_is_RorC center and SubField typeclass resolution is very deep
-set_option maxHeartbeats 600000 in
--- Reason: RealExtension_is_RorC center and SubField typeclass resolution is very deep
+
+lemma hhA'_helper (A : Type) [DivisionRing A] [Algebra ℝ A] [FiniteDimensional ℝ A]
+  [_hAA : Algebra.IsCentral ℝ A] [IsScalarTower ℝ ℝ A] (L : SubField ℝ A) (_hL : IsMax L) :
+  Module.finrank ℝ L.toSubalgebra = 1 ∨ Module.finrank ℝ L.toSubalgebra = 2 := by
+  letI : Field L.toSubalgebra := SubField.carrier.instField
+  obtain hR | hH := RealExtension_is_RorC L.toSubalgebra
+  · have := LinearEquiv.finrank_eq hR.some.toLinearEquiv
+    rw [Module.finrank_self] at this
+    exact Or.inl this
+  · have := LinearEquiv.finrank_eq hH.some.toLinearEquiv
+    rw [Complex.finrank_real_complex] at this
+    exact Or.inr this
+
+
 theorem FrobeniusTheorem (A : Type) [DivisionRing A] [Algebra ℝ A] [FiniteDimensional ℝ A] :
     Nonempty (A ≃ₐ[ℝ] ℂ) ∨ Nonempty (A ≃ₐ[ℝ] ℝ) ∨ Nonempty (A ≃ₐ[ℝ] ℍ[ℝ]) := by
+  haveI : Nontrivial A := inferInstance
+  haveI : IsScalarTower ℝ ℝ A := inferInstance
+  haveI : FiniteDimensional ℝ (Subalgebra.center ℝ A) := inferInstance
   obtain ⟨⟨hR⟩⟩ | hC := RealExtension_is_RorC (Subalgebra.center ℝ A)
   · right
     have : Subalgebra.center ℝ A = ⊥ := by
-      have := LinearEquiv.finrank_eq hR.toLinearEquiv
-      simp only [Module.finrank_self, Subalgebra.finrank_eq_one_iff] at this
-      exact this
-    have hAA : Algebra.IsCentral ℝ A := ⟨le_of_eq this⟩
-    have hhA' (L : SubField ℝ A) (hL : IsMax L) :
-      Module.finrank ℝ L = 1 ∨ Module.finrank ℝ L = 2 := by
-      obtain hR | hH := RealExtension_is_RorC L
-      · have := LinearEquiv.finrank_eq hR.some.toLinearEquiv
-        simp only [Module.finrank_self] at this
-        exact Or.inl this
-      · have := LinearEquiv.finrank_eq hH.some.toLinearEquiv
-        simp only [Complex.finrank_real_complex] at this
-        exact Or.inr this
-    specialize hhA'
+      have h := LinearEquiv.finrank_eq hR.toLinearEquiv
+      rw [Module.finrank_self] at h
+      exact Subalgebra.finrank_eq_one_iff.mp h
+    haveI hAA : Algebra.IsCentral ℝ A := ⟨le_of_eq this⟩
     obtain ⟨L, hL⟩ := SubField.exists_isMax ℝ A
-    have dimeq := dim_max_subfield ℝ A L hL
-    obtain h1 | h2 := hhA' L hL
+    letI : Algebra ℝ L := L.toSubalgebra.algebra'
+    letI : FiniteDimensional ℝ L := SubField.finiteDimensional
+    letI : Field L := fieldOfFiniteDimensional ℝ L
+    have dimeq := @dim_max_subfield ℝ A _ _ _ _ hAA L hL
+    have h_finrank : Module.finrank ℝ L = Module.finrank ℝ L.toSubalgebra := rfl
+    rw [h_finrank] at dimeq
+    obtain h1 | h2 := hhA'_helper A L hL
     · left
-      simp only [h1, mul_one] at dimeq
+      rw [h1, mul_one] at dimeq
       exact rank_1_D_iso_R dimeq
     · right
-      simp only [h2, Nat.reduceMul] at dimeq
-      obtain ⟨e1⟩ | e2 := RealExtension_is_RorC L
+      rw [h2] at dimeq
+      letI : FiniteDimensional ℝ L := SubField.finiteDimensional
+      letI : Algebra ℝ L := L.toSubalgebra.algebra'
+      obtain ⟨⟨e1⟩⟩ | e2 := RealExtension_is_RorC L
       · exfalso
-        have := LinearEquiv.finrank_eq e1.some.toLinearEquiv
+        have := LinearEquiv.finrank_eq e1.toLinearEquiv
         rw [Module.finrank_self] at this
         linarith
       · exact ⟨(rank4_iso_H L e2.some (f_is_conjugation L e2.some).choose

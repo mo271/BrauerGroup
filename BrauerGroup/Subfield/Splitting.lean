@@ -39,14 +39,44 @@ def splitting_emb_map [FiniteDimensional F K] (A : CSA F) (n : ℕ)
     AddHom.coe_mk, LinearMap.coe_single, Function.comp_apply, Pi.smul_apply,
     SubalgebraClass.coe_algebraMap, Module.algebraMap_end_apply]
 
-set_option maxHeartbeats 300000 in
--- Reason: Elaboration of the centralizer dimension and tensor isomorphism proofs requires higher limit.
+private lemma finrank_algHom_range {R A B : Type*} [CommRing R] [Ring A] [Ring B]
+    [Algebra R A] [Algebra R B]
+    (f : A →ₐ[R] B) (hf : Function.Injective f) :
+    Module.finrank R ↥(AlgHom.range f) = Module.finrank R A :=
+  (AlgEquiv.ofInjective f hf).symm.toLinearEquiv.finrank_eq
+
+private lemma finrank_of_split_iso (F K : Type*) [Field F] [Field K] [Algebra F K]
+    [FiniteDimensional F K]
+    (A : Type*) [Ring A] [Algebra F A] [Module.Finite F A] [Module.Free F A]
+    {n : ℕ} (iso : K ⊗[F] A ≃ₐ[K] Matrix (Fin n) (Fin n) K) :
+    Module.finrank F A = n * n := by
+  have h := iso.toLinearEquiv.finrank_eq
+  simp only [Module.finrank_tensorProduct, Module.finrank_self, _root_.one_mul,
+    _root_.mul_one, Module.finrank_matrix, Fintype.card_fin] at h
+  exact h
+
+private lemma centralizer_finrank_mul_eq {F : Type u} [Field F]
+    {V : Type u} [AddCommGroup V] [Module F V] [Module.Finite F V] [Module.Free F V]
+    {A : Type u} [Ring A] [Algebra F A]
+    (emb : A →ₐ[F] Module.End F V)
+    (hemb : Function.Injective emb)
+    [Algebra.IsCentral F (Module.End F V)]
+    [IsSimpleRing (Module.End F V)]
+    [Algebra.IsCentral F (AlgHom.range emb)]
+    [IsSimpleRing (AlgHom.range emb)] :
+    Module.finrank F (Subalgebra.centralizer F (AlgHom.range emb : Set (Module.End F V))) *
+    Module.finrank F A =
+    Module.finrank F V * Module.finrank F V := by
+  have dc := dim_centralizer F emb.range
+  rw [finrank_algHom_range emb hemb, Module.finrank_linearMap] at dc
+  exact dc
+
 set_option maxSynthPendingDepth 2 in
 lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : isSplit F A K) :
     ∃ (B : CSA F), (Quotient.mk'' A : BrauerGroup F) * (Quotient.mk'' B) = 1 ∧
       ∃ (_ : K →ₐ[F] B), (Module.finrank F K)^2 = Module.finrank F B := by
   obtain ⟨n, hn, ⟨iso⟩⟩ := split
-  let iso' := iso.trans (algEquivMatrix' (R := K) (n := Fin n)).symm
+  have iso' := iso.trans (algEquivMatrix' (R := K) (n := Fin n)).symm
   let emb : A →ₐ[F] Module.End F (Fin n → K) :=
     AlgHom.comp (AlgHom.comp
       { toFun f := f.restrictScalars F
@@ -57,7 +87,7 @@ lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : i
         commutes' := by intros; ext; rfl } <| iso'.toAlgHom.restrictScalars F) <|
       Algebra.TensorProduct.includeRight (R := F) (A := K) (B := A)
   let B := Subalgebra.centralizer F (AlgHom.range emb : Set (Module.End F (Fin n → K)))
-  let e : A ≃ₐ[F] (AlgHom.range emb) :=
+  have e : A ≃ₐ[F] (AlgHom.range emb) :=
     AlgEquiv.ofInjective _ (IsSimpleRing.iff_injective_ringHom A|>.1 inferInstance emb.toRingHom)
   haveI : Algebra.IsCentral F (AlgHom.range emb) := e.isCentral
   haveI : IsSimpleRing (AlgHom.range emb) := by
@@ -109,29 +139,19 @@ lemma exists_embedding_of_isSplit [FiniteDimensional F K] (A : CSA F) (split : i
     apply Quotient.sound'
     exact ⟨1, Module.finrank F (Fin n → K), one_ne_zero, NeZero.ne _, ⟨(dim_one_iso _).trans iso⟩⟩
   · change Module.finrank F K ^ 2 = Module.finrank F B
-    have dim_eq1 : Module.finrank F B * _ = _ := dim_centralizer F emb.range
-    rw [Module.finrank_linearMap, show Module.finrank F (Fin n → K) =
-      Module.finrank F K * Module.finrank K (Fin n → K) from
-      (Module.finrank_mul_finrank F K (Fin n → K)).symm, Module.finrank_fin_fun,
-      show Module.finrank F emb.range = Module.finrank F A from e.symm.toLinearEquiv.finrank_eq,
-      show Module.finrank F K * n * (Module.finrank F K * n) = (Module.finrank F K)^2 * n ^ 2 by
-        simp only [pow_two]; group] at dim_eq1
-    have dim_eq2 := iso.toLinearEquiv.finrank_eq
-    simp only [Module.finrank_tensorProduct, Module.finrank_self, _root_.one_mul,
-      Module.finrank_matrix, Fintype.card_fin] at dim_eq2
-    rw [dim_eq2, ← pow_two] at dim_eq1
-    let m := Module.finrank F B
-    let M := Module.finrank F K
-    haveI : Nontrivial B := ⟨0, 1, fun r ↦ by
-      simp only [zero_ne_one] at r⟩
-    simp only [_root_.mul_one] at dim_eq1
-    change m * n ^ 2 = M^2 * _ at dim_eq1
-    change M^2 = m
-    clear_value m M
-    clear dim_eq2
-    simp only [mul_eq_mul_right_iff, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
-      pow_eq_zero_iff] at dim_eq1
-    refine dim_eq1 |>.resolve_right hn.1 |>.symm
+    have hemb := IsSimpleRing.iff_injective_ringHom A |>.1 inferInstance emb.toRingHom
+    have dc := centralizer_finrank_mul_eq emb hemb
+    -- dc : finrank F B * finrank F A = finrank F (Fin n → K) * finrank F (Fin n → K)
+    have h_v : Module.finrank F (Fin n → K) = Module.finrank F K * n := by
+      rw [(Module.finrank_mul_finrank F K (Fin n → K)).symm, Module.finrank_fin_fun]
+    have h_a := finrank_of_split_iso F K A.carrier iso
+    rw [h_v, h_a] at dc
+    -- dc : finrank F B * (n * n) = (finrank F K * n) * (finrank F K * n)
+    have h4 : Module.finrank F K * n * (Module.finrank F K * n) =
+        (Module.finrank F K) ^ 2 * (n * n) := by ring
+    rw [h4] at dc
+    have hn2 : 0 < n * n := Nat.mul_pos (Nat.pos_of_ne_zero hn.1) (Nat.pos_of_ne_zero hn.1)
+    exact (Nat.eq_of_mul_eq_mul_right hn2 dc).symm
 
 /--
 theorem 3.3

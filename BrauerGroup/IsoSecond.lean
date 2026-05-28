@@ -306,53 +306,57 @@ lemma C_smul_calc (k : K) (σ : Gal(K, F)) (a : A) (b : B) :
     Submodule.Quotient.mk (((k • basis σ) * a) ⊗ₜ (basis σ * b)) :=
   C_smul_aux_calc k σ a b
 
-set_option maxHeartbeats 1200000 in
--- FIXME: Get rid of the raised heartbeats
+private theorem C_mul_smul'_single_single_tmul (σ τ : Gal(K, F)) (k1 k2 : K) (a : A) (b : B) :
+    C_smul (⟨mulLinearMap (α * β) (.single σ k1) (.single τ k2)⟩ : C)
+      (Submodule.Quotient.mk (a ⊗ₜ[F] b) : M α β) =
+    C_smul (⟨.single σ k1⟩ : C)
+      (C_smul (⟨.single τ k2⟩ : C) (Submodule.Quotient.mk (a ⊗ₜ[F] b) : M α β)) := by
+  simp only [mulLinearMap_single_single, Pi.mul_apply, Units.val_mul]
+  rw [← mul_one (k1 * σ k2 * ((α (σ, τ)).1 * (β (σ, τ)).1)), ← smul_eq_mul _ 1,
+    ← Finsupp.smul_single, ← CrossProductAlgebra.smul_mk, mk_single_one, ← mul_one k1,
+    ← mul_one k2, ← smul_eq_mul _ 1, ← Finsupp.smul_single, ← smul_mk, mk_single_one,
+    ← smul_eq_mul _ 1, ← Finsupp.smul_single, ← smul_mk, mk_single_one, ← C_smul_def,
+    ← C_smul_def, ← C_smul_def, C_smul_calc, C_smul_calc, C_smul_calc, Submodule.Quotient.eq]
+  simp only [smul_eq_mul, _root_.mul_one]
+  rw [← _root_.mul_assoc (basis σ) _ b, CrossProductAlgebra.basis_mul_basis σ τ,
+    incl_apply, smul_mul_assoc (β (σ, τ)).1, _root_.one_mul, smul_mul_assoc (β (σ, τ)).1,
+    ← _root_.mul_assoc (k1 • basis σ), basis_smul_comm, ← mul_smul (σ k2), mul_comm k1,
+    smul_mul_assoc (σ k2 * k1), CrossProductAlgebra.basis_mul_basis σ τ]
+  simp only [incl_apply, smul_one_mul]
+  rw [← mul_smul (σ k2 * k1), mul_comm (α (_, _)).1, ← _root_.mul_assoc,
+    mul_comm (σ k2 * k1) (β (_, _)).1, _root_.mul_assoc, mul_smul, smul_mul_assoc]
+  exact Submodule.subset_span ⟨⟨(β (σ, τ)).1, (σ k2 * k1 * ↑(α (σ, τ))) • basis (σ * τ) * a,
+    basis (σ * τ) * b⟩, rfl⟩
+
 theorem C_mul_smul' (x y : C) (ab : M α β) : (x * y) • ab = x • y • ab := by
-  change ((⟨x.val⟩ : C) * ⟨y.val⟩) • ab = (⟨x.val⟩ : C) • (⟨y.val⟩ : C) • ab
-  induction x.val using Finsupp.induction_linear with
-  | zero => change (0 * _) • _ = 0 • _; change C_smul _ _ = C_smul _ (C_smul _ _); simp
+  rcases x with ⟨x_val⟩
+  rcases y with ⟨y_val⟩
+  change C_smul (⟨x_val⟩ * ⟨y_val⟩) ab = C_smul ⟨x_val⟩ (C_smul ⟨y_val⟩ ab)
+  rw [show (⟨x_val⟩ : C) * ⟨y_val⟩ = (⟨mulLinearMap (α * β) x_val y_val⟩ : C) from rfl]
+  induction x_val using Finsupp.induction_linear with
+  | zero => simp
   | add f g h1 h2 =>
-    change ((⟨f⟩ + ⟨g⟩ : C) * _) • ab = (⟨f⟩ + ⟨g⟩ : C) • _ • _
-    simp only [add_mul]
-    change C_smul _ _ = C_smul _ (C_smul _ _) at h1 h2 ⊢
-    rw [map_add, LinearMap.add_apply, map_add, LinearMap.add_apply, h1, h2]
+    simp only [map_add]
+    change C_smul (⟨mulLinearMap (α * β) f y_val⟩ + ⟨mulLinearMap (α * β) g y_val⟩) ab =
+      C_smul (⟨f⟩ + ⟨g⟩) (C_smul ⟨y_val⟩ ab)
+    simp only [map_add, LinearMap.add_apply, h1, h2]
   | single σ k1 =>
-    induction y.val using Finsupp.induction_linear with
-    | zero =>
-      change (_ * 0) • _ = _ • 0 • _ ;
-      change C_smul _ _ = C_smul _ (C_smul _ _)
-      simp
+    induction y_val using Finsupp.induction_linear with
+    | zero => simp
     | add f g h1 h2 =>
-      change C_smul (⟨.single σ k1⟩ * (_ + _) : C) _ = C_smul _ (C_smul (⟨f⟩ + ⟨g⟩ : C) _)
-      change C_smul _ _ = C_smul _ (C_smul _ _) at h1 h2
-      rw [mul_add, map_add, LinearMap.add_apply, map_add, LinearMap.add_apply, h1, h2, map_add]
+      simp only [map_add]
+      change C_smul (⟨mulLinearMap (α * β) (Finsupp.single σ k1) f⟩ +
+        ⟨mulLinearMap (α * β) (Finsupp.single σ k1) g⟩) ab =
+        C_smul (⟨.single σ k1⟩ : C)
+          (C_smul (⟨f⟩ + ⟨g⟩ : C) ab)
+      simp only [map_add, LinearMap.add_apply, h1, h2]
     | single τ k2 =>
       induction ab using Submodule.Quotient.induction_on with | H ab =>
       induction ab using TensorProduct.induction_on with
-      | zero =>
-        change C_smul _ _ = C_smul _ (C_smul _ _)
-        simp
-      | tmul a b =>
-        change C_smul (⟨mulLinearMap _ (.single σ k1) (.single τ k2)⟩ : C) _ = C_smul _ (C_smul _ _)
-        simp only [mulLinearMap_single_single, Pi.mul_apply, Units.val_mul]
-        rw [← mul_one (k1 * σ k2 * ((α (σ, τ)).1 * (β (σ, τ)).1)), ← smul_eq_mul _ 1,
-          ← Finsupp.smul_single, ← CrossProductAlgebra.smul_mk, mk_single_one, ← mul_one k1,
-          ← mul_one k2, ← smul_eq_mul _ 1, ← Finsupp.smul_single, ← smul_mk, mk_single_one,
-          ← smul_eq_mul _ 1, ← Finsupp.smul_single, ← smul_mk, mk_single_one, ← C_smul_def,
-          ← C_smul_def, ← C_smul_def, C_smul_calc, C_smul_calc, C_smul_calc, Submodule.Quotient.eq]
-        simp only [smul_eq_mul, _root_.mul_one]
-        rw [← _root_.mul_assoc (basis σ) _ b, CrossProductAlgebra.basis_mul_basis σ τ,
-          incl_apply, smul_mul_assoc (β (σ, τ)).1, _root_.one_mul, smul_mul_assoc (β (σ, τ)).1,
-          ← _root_.mul_assoc (k1 • basis σ), basis_smul_comm, ← mul_smul (σ k2), mul_comm k1,
-          smul_mul_assoc (σ k2 * k1), CrossProductAlgebra.basis_mul_basis σ τ]
-        simp only [incl_apply, smul_one_mul]
-        rw [← mul_smul (σ k2 * k1), mul_comm (α (_, _)).1, ← _root_.mul_assoc,
-          mul_comm (σ k2 * k1) (β (_, _)).1, _root_.mul_assoc, mul_smul, smul_mul_assoc]
-        exact Submodule.subset_span ⟨⟨(β (σ, τ)).1, (σ k2 * k1 * ↑(α (σ, τ))) • basis (σ * τ) * a,
-          basis (σ * τ) * b⟩, rfl⟩
+      | zero => simp
+      | tmul a b => exact C_mul_smul'_single_single_tmul σ τ k1 k2 a b
       | add x y h1 h2 =>
-        simp only [C_smul_def, Submodule.Quotient.mk_add, map_add] at h1 h2 ⊢
+        simp only [Submodule.Quotient.mk_add, map_add] at h1 h2 ⊢
         rw [h1, h2]
 
 instance : MulAction C (M α β) where

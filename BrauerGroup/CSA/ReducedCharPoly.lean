@@ -304,9 +304,6 @@ noncomputable def quotTensorRightAlgHom (L : Type u) [Field L] [Algebra K L]
 
 include F_bar in
 set_option maxSynthPendingDepth 3 in
-set_option synthInstance.maxHeartbeats 40000 in
--- Reason: deep typeclass resolution for quotient algebra instances
-set_option maxHeartbeats 800000 in
 lemma unique_onver_split (L L_bar : Type u) [Field L] [Field L_bar] [Algebra K L] [Algebra L L_bar]
     [FiniteDimensional K L] [IsGalois K L] [hL : IsAlgClosure L L_bar]
     (e' : L ⊗[K] A ≃ₐ[L] Matrix (Fin n) (Fin n) L) (a : A) :
